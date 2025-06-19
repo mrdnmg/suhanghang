@@ -215,17 +215,24 @@ class Logout:
 # ---------------------
 # EDA 페이지 클래스
 # ---------------------
+# ---------------------
+# EDA 페이지 클래스
+# ---------------------
 class EDA:
     def __init__(self):
         st.title("📊 지역별 인구 분석 EDA")
+
+        # ✅ 한글 폰트 설정
+        import matplotlib.font_manager as fm
+        plt.rcParams['font.family'] = 'NanumGothic'  # 나눔고딕은 Streamlit Cloud에서도 호환 잘됨
+        plt.rcParams['axes.unicode_minus'] = False
+
         uploaded = st.file_uploader("population_trends.csv 파일을 업로드해주세요", type="csv")
         if not uploaded:
             st.info("CSV 파일을 업로드하면 분석 결과가 표시됩니다.")
             return
 
         df = pd.read_csv(uploaded)
-
-        # 결측치 및 형 변환 (1. 결측치 및 중복 확인 포함)
         df.replace('-', 0, inplace=True)
         df[['인구', '출생아수(명)', '사망자수(명)']] = df[['인구', '출생아수(명)', '사망자수(명)']].apply(pd.to_numeric)
 
@@ -237,13 +244,10 @@ class EDA:
             buffer = io.StringIO()
             df.info(buf=buffer)
             st.text(buffer.getvalue())
-
             st.subheader("기초 통계량")
             st.dataframe(df.describe())
-
             st.subheader("결측치 개수")
             st.dataframe(df.isnull().sum())
-
             st.subheader("중복 행 개수")
             st.write(f"중복 행: {df.duplicated().sum()}개")
 
@@ -255,10 +259,10 @@ class EDA:
             last3 = nation.sort_values('연도').tail(3)
             avg_delta = (last3['출생아수(명)'].mean() - last3['사망자수(명)'].mean())
             pred_2035 = nation['인구'].iloc[-1] + avg_delta * (2035 - nation['연도'].iloc[-1])
-            plt.axhline(pred_2035, color='red', linestyle='--', label='2035 Prediction')
-            plt.title("National Population Trend")
-            plt.xlabel("Year")
-            plt.ylabel("Population")
+            plt.axhline(pred_2035, color='red', linestyle='--', label='2035 예측')
+            plt.title("전국 인구 추이")
+            plt.xlabel("연도")
+            plt.ylabel("인구")
             plt.legend()
             st.pyplot(plt.gcf())
             st.write(f"2035년 예측 인구: {int(pred_2035):,} 명")
@@ -272,9 +276,9 @@ class EDA:
             delta = delta.drop('전국', errors='ignore').sort_values(ascending=False)
             plt.figure(figsize=(10, 8))
             ax1 = sns.barplot(x=delta.values / 1000, y=delta.index, orient='h')
-            ax1.set_title("Population Change by Region (last 5 years)")
-            ax1.set_xlabel("Change (thousands)")
-            ax1.set_ylabel("Region")
+            ax1.set_title("최근 5년간 지역별 인구 변화")
+            ax1.set_xlabel("변화량 (천 명)")
+            ax1.set_ylabel("지역")
             for i, val in enumerate(delta.values / 1000):
                 ax1.text(val, i, f'{val:.1f}', va='center')
             plt.tight_layout()
@@ -285,9 +289,9 @@ class EDA:
             rate = ((pivot.iloc[-1] - base) / base * 100).drop('전국', errors='ignore').sort_values(ascending=False)
             plt.figure(figsize=(10, 8))
             ax2 = sns.barplot(x=rate.values, y=rate.index, orient='h')
-            ax2.set_title("Population Growth Rate by Region (%)")
-            ax2.set_xlabel("Growth Rate (%)")
-            ax2.set_ylabel("Region")
+            ax2.set_title("최근 5년간 지역별 인구 변화율")
+            ax2.set_xlabel("증감률 (%)")
+            ax2.set_ylabel("지역")
             for i, val in enumerate(rate.values):
                 ax2.text(val, i, f'{val:.1f}%', va='center')
             plt.tight_layout()
@@ -310,12 +314,11 @@ class EDA:
             pivot = pivot.div(1000)
             plt.figure(figsize=(12, 6))
             pivot.plot.area()
-            plt.title("Stacked Population by Region")
-            plt.xlabel("Year")
-            plt.ylabel("Population (thousands)")
+            plt.title("지역별 누적 인구 변화")
+            plt.xlabel("연도")
+            plt.ylabel("인구 (천 명)")
             plt.tight_layout()
             st.pyplot(plt.gcf())
-
 
 
 # ---------------------
