@@ -212,6 +212,9 @@ class Logout:
 # ---------------------
 # EDA 페이지 클래스
 # ---------------------
+# ---------------------
+# EDA 페이지 클래스
+# ---------------------
 class EDA:
     def __init__(self):
         st.title("📊 지역별 인구 분석 EDA")
@@ -267,21 +270,27 @@ class EDA:
             pivot = recent.pivot(index='연도', columns='지역', values='인구')
             delta = pivot.iloc[-1] - pivot.iloc[0]
             delta = delta.drop('전국', errors='ignore').sort_values(ascending=False)
-            plt.figure(figsize=(10, 6))
-            sns.barplot(x=delta.values / 1000, y=delta.index, orient='h')
-            plt.title("Population Change by Region (last 5 years)")
-            plt.xlabel("Change (thousands)")
-            plt.ylabel("Region")
+            plt.figure(figsize=(10, 8))
+            ax1 = sns.barplot(x=delta.values / 1000, y=delta.index, orient='h')
+            ax1.set_title("Population Change by Region (last 5 years)")
+            ax1.set_xlabel("Change (thousands)")
+            ax1.set_ylabel("Region")
+            for i, val in enumerate(delta.values / 1000):
+                ax1.text(val, i, f'{val:.1f}', va='center')
+            plt.tight_layout()
             st.pyplot(plt.gcf())
 
             st.subheader("📈 변화율 분석")
             base = pivot.iloc[0]
             rate = ((pivot.iloc[-1] - base) / base * 100).drop('전국', errors='ignore').sort_values(ascending=False)
-            plt.figure(figsize=(10, 6))
-            sns.barplot(x=rate.values, y=rate.index, orient='h')
-            plt.title("Population Growth Rate by Region (%)")
-            plt.xlabel("Growth Rate (%)")
-            plt.ylabel("Region")
+            plt.figure(figsize=(10, 8))
+            ax2 = sns.barplot(x=rate.values, y=rate.index, orient='h')
+            ax2.set_title("Population Growth Rate by Region (%)")
+            ax2.set_xlabel("Growth Rate (%)")
+            ax2.set_ylabel("Region")
+            for i, val in enumerate(rate.values):
+                ax2.text(val, i, f'{val:.1f}%', va='center')
+            plt.tight_layout()
             st.pyplot(plt.gcf())
 
         with tab4:
@@ -304,6 +313,7 @@ class EDA:
             plt.title("Stacked Population by Region")
             plt.xlabel("Year")
             plt.ylabel("Population (thousands)")
+            plt.tight_layout()
             st.pyplot(plt.gcf())
 
 
