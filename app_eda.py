@@ -221,6 +221,9 @@ class Logout:
 # ---------------------
 # EDA 페이지 클래스
 # ---------------------
+# ---------------------
+# EDA 페이지 클래스
+# ---------------------
 class EDA:
     def __init__(self):
         st.title("📊 지역별 인구 분석 EDA")
@@ -324,7 +327,8 @@ class EDA:
             pivot = pivot.drop(columns='Nationwide', errors='ignore').fillna(0)
             pivot = pivot.div(1000)
             plt.figure(figsize=(12, 6))
-            pivot.plot.area()
+            ax = pivot.plot.area(legend=True)
+            ax.legend(title='Region', loc='center left', bbox_to_anchor=(1.0, 0.5))
             plt.title("Population Trend by Region")
             plt.xlabel("Year")
             plt.ylabel("Population (thousands)")
