@@ -209,6 +209,9 @@ class Logout:
 # ---------------------
 # EDA 페이지 클래스
 # ---------------------
+# ---------------------
+# EDA 페이지 클래스
+# ---------------------
 class EDA:
     def __init__(self):
         st.title("📊 지역별 인구 분석 EDA")
@@ -219,59 +222,70 @@ class EDA:
 
         df = pd.read_csv(uploaded)
 
-        # 기본 전처리
+        # 결측치 및 형 변환 (1. 결측치 및 중복 확인 포함)
         df.replace('-', 0, inplace=True)
         df[['인구', '출생아수(명)', '사망자수(명)']] = df[['인구', '출생아수(명)', '사망자수(명)']].apply(pd.to_numeric)
 
         tab1, tab2, tab3, tab4, tab5 = st.tabs(["기초 통계", "연도별 추이", "지역별 분석", "변화량 분석", "시각화"])
 
         with tab1:
-            st.header("📌기초 통계 및 구조 확인")
+            st.header("📌 기초 통계 및 구조 확인 (결측치/중복 포함)")
+            st.subheader("데이터프레임 구조")
             buffer = io.StringIO()
             df.info(buf=buffer)
             st.text(buffer.getvalue())
+
+            st.subheader("기초 통계량")
             st.dataframe(df.describe())
 
+            st.subheader("결측치 개수")
+            st.dataframe(df.isnull().sum())
+
+            st.subheader("중복 행 개수")
+            st.write(f"중복 행: {df.duplicated().sum()}개")
+
         with tab2:
-            st.header("📈 연도별 전국 인구 추이")
+            st.header("📈 연도별 전국 인구 추이 분석")
             nation = df[df['지역'] == '전국']
             plt.figure(figsize=(10, 4))
             sns.lineplot(x='연도', y='인구', data=nation)
-
-            # 예측 (단순 평균 증가율 기반)
             last3 = nation.sort_values('연도').tail(3)
             avg_delta = (last3['출생아수(명)'].mean() - last3['사망자수(명)'].mean())
             pred_2035 = nation['인구'].iloc[-1] + avg_delta * (2035 - nation['연도'].iloc[-1])
-            plt.axhline(pred_2035, color='red', linestyle='--')
+            plt.axhline(pred_2035, color='red', linestyle='--', label='2035 Prediction')
             plt.title("National Population Trend")
             plt.xlabel("Year")
             plt.ylabel("Population")
+            plt.legend()
             st.pyplot(plt.gcf())
             st.write(f"2035년 예측 인구: {int(pred_2035):,} 명")
 
         with tab3:
-            st.header("🏙️ 최근 5년간 지역별 인구 변화량 분석")
+            st.header("📊 최근 5년간 지역별 인구 변화량 순위 분석")
             df_sorted = df.sort_values(['지역', '연도'])
             recent = df[df['연도'] >= df['연도'].max() - 5]
             pivot = recent.pivot(index='연도', columns='지역', values='인구')
             delta = pivot.iloc[-1] - pivot.iloc[0]
             delta = delta.drop('전국', errors='ignore').sort_values(ascending=False)
             plt.figure(figsize=(10, 6))
-            sns.barplot(x=delta.values / 1000, y=delta.index)
+            sns.barplot(x=delta.values / 1000, y=delta.index, orient='h')
             plt.title("Population Change by Region (last 5 years)")
             plt.xlabel("Change (thousands)")
+            plt.ylabel("Region")
             st.pyplot(plt.gcf())
 
-            st.subheader("💹 변화율 분석")
+            st.subheader("📈 변화율 분석")
             base = pivot.iloc[0]
             rate = ((pivot.iloc[-1] - base) / base * 100).drop('전국', errors='ignore').sort_values(ascending=False)
             plt.figure(figsize=(10, 6))
-            sns.barplot(x=rate.values, y=rate.index)
+            sns.barplot(x=rate.values, y=rate.index, orient='h')
             plt.title("Population Growth Rate by Region (%)")
+            plt.xlabel("Growth Rate (%)")
+            plt.ylabel("Region")
             st.pyplot(plt.gcf())
 
         with tab4:
-            st.header("📊 연도별 인구 증감 Top 100")
+            st.header("📋 증감률 상위 100개 지역-연도 도출")
             df_diff = df[df['지역'] != '전국'].sort_values(['지역', '연도'])
             df_diff['증감'] = df_diff.groupby('지역')['인구'].diff()
             top_diff = df_diff.sort_values('증감', ascending=False).head(100)
@@ -283,15 +297,15 @@ class EDA:
         with tab5:
             st.header("🗺️ 누적 영역 그래프 시각화")
             pivot = df.pivot(index='연도', columns='지역', values='인구')
-            pivot = pivot.drop(columns='전국', errors='ignore')
-            pivot = pivot.fillna(0)
-            pivot = pivot.div(1000)  # 천 명 단위
+            pivot = pivot.drop(columns='전국', errors='ignore').fillna(0)
+            pivot = pivot.div(1000)
             plt.figure(figsize=(12, 6))
             pivot.plot.area()
             plt.title("Stacked Population by Region")
             plt.xlabel("Year")
             plt.ylabel("Population (thousands)")
             st.pyplot(plt.gcf())
+
 
 
 # ---------------------
